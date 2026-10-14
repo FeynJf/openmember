@@ -1,0 +1,582 @@
+let currentUser = null;
+let userRole = 'member';
+
+// Inisialisasi Data Default
+if (!localStorage.getItem('opa_home_about')) {
+    localStorage.setItem('opa_home_about', 'OPA Guild adalah aliansi game kompetitif yang mengutamakan solidaritas, kekompakan, dan dominasi di berbagai arena pertempuran game online.');
+}
+
+if (!localStorage.getItem('opa_members')) {
+    localStorage.setItem('opa_members', JSON.stringify([
+        { realname: 'Yosua Master', nickname: 'OPA・Yosua', id: '10001515', level: '99', role: 'Leader', status: 'offline', type: 'admin' },
+        { realname: 'Feyn Master', nickname: 'OPA・Feyn', id: '10001516', level: '98', role: 'Admin', status: 'offline', type: 'admin' },
+        { realname: 'Dimas Pratama', nickname: 'OPA・Vortex', id: '11223344', level: '85', role: 'Anggota', status: 'offline', type: 'member' }
+    ]));
+}
+
+if (!localStorage.getItem('opa_waiting')) {
+    localStorage.setItem('opa_waiting', JSON.stringify([]));
+}
+
+if (!localStorage.getItem('opa_user_statuses')) {
+    localStorage.setItem('opa_user_statuses', JSON.stringify({}));
+}
+
+if (!localStorage.getItem('opa_chat_group')) {
+    localStorage.setItem('opa_chat_group', JSON.stringify([
+        { sender: 'OPA・Yosua', text: 'Selamat datang di obrolan grup OPA OFFICIAL! Silakan koordinasi mabar di sini.' }
+    ]));
+}
+
+// Cek Sesi Aktif di localStorage (Agar tidak auto-logout saat refresh)
+window.addEventListener('DOMContentLoaded', () => {
+    let savedUser = localStorage.getItem('opa_current_user');
+    let savedRole = localStorage.getItem('opa_current_role');
+    if (savedUser) {
+        currentUser = savedUser;
+        userRole = savedRole || 'member';
+        
+        // Update status jadi online
+        updateMemberStatus(currentUser, 'online');
+        initSession();
+    }
+});
+
+function switchAuthTab(type) {
+    const loginForm = document.getElementById('form-login');
+    const signupForm = document.getElementById('form-signup');
+    const loginBtn = document.getElementById('tab-login-btn');
+    const signupBtn = document.getElementById('tab-register-btn');
+    document.getElementById('login-error-alert').classList.add('hidden');
+
+    if (type === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        loginBtn.classList.add('active');
+        signupBtn.classList.remove('active');
+    } else {
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        signupBtn.classList.add('active');
+        loginBtn.classList.remove('active');
+    }
+}
+
+function generateRandomPassword() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$*!";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('signup-password').value = password;
+}
+
+function handleSignup(e) {
+    e.preventDefault();
+    const username = document.getElementById('signup-username').value.trim();
+    const password = document.getElementById('signup-password').value;
+
+    if (!username || !password) {
+        showLoginError("Harap isi username dan buat password acak terlebih dahulu!");
+        return;
+    }
+
+    let users = JSON.parse(localStorage.getItem('opa_users')) || [];
+    if (users.some(u => u.username === username)) {
+        showLoginError("Username sudah digunakan orang lain, pilih yang lain!");
+        return;
+    }
+
+    users.push({ username, password });
+    localStorage.setItem('opa_users', JSON.stringify(users));
+
+    alert("Akun berhasil dibuat! Silakan login.");
+    document.getElementById('signup-username').value = '';
+    document.getElementById('signup-password').value = '';
+    switchAuthTab('login');
+}
+
+function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    const cleanUser = username.toLowerCase();
+    const isMasterAdmin = (
+        (cleanUser === 'yosua' || cleanUser === 'opa・yosua' || cleanUser === 'feyn' || cleanUser === 'opa・feyn') && 
+        (password === 'YosuaAdmin15' || password === 'FeynAdmin15')
+    );
+
+    if (isMasterAdmin) {
+        currentUser = username;
+        userRole = 'admin';
+        saveSession();
+        initSession();
+        return;
+    }
+
+    // Cek di database member
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    let foundMember = members.find(m => m.nickname.toLowerCase() === cleanUser || m.realname.toLowerCase() === cleanUser);
+    if (foundMember && (password === 'YosuaAdmin15' || password === 'FeynAdmin15')) {
+        currentUser = foundMember.nickname;
+        userRole = foundMember.type === 'admin' ? 'admin' : 'member';
+        saveSession();
+        initSession();
+        return;
+    }
+
+    let users = JSON.parse(localStorage.getItem('opa_users')) || [];
+    const foundUser = users.find(u => u.username.toLowerCase() === cleanUser && u.password === password);
+
+    if (foundUser || (cleanUser === "admin" && password === "admin123")) {
+        currentUser = username;
+        userRole = 'member';
+        saveSession();
+        initSession();
+    } else {
+        showLoginError("Login Gagal! Username atau Password salah. (Admin: Yosua / YosuaAdmin15)");
+    }
+}
+
+function showLoginError(msg) {
+    const errBox = document.getElementById('login-error-alert');
+    document.getElementById('error-text').innerText = msg;
+    errBox.classList.remove('hidden');
+}
+
+function saveSession() {
+    localStorage.setItem('opa_current_user', currentUser);
+    localStorage.setItem('opa_current_role', userRole);
+    updateMemberStatus(currentUser, 'online');
+}
+
+function updateMemberStatus(nickname, status) {
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    members.forEach(m => {
+        if (m.nickname.toLowerCase() === nickname.toLowerCase() || m.realname.toLowerCase() === nickname.toLowerCase()) {
+            m.status = status;
+        }
+    });
+    localStorage.setItem('opa_members', JSON.stringify(members));
+}
+
+function initSession() {
+    document.getElementById('display-username').innerText = currentUser;
+    document.getElementById('display-role').innerText = userRole === 'admin' ? 'Guild Master / Admin' : 'Member Guild';
+    
+    if (userRole === 'admin') {
+        document.getElementById('menu-admin-panel').classList.remove('hidden');
+    } else {
+        document.getElementById('menu-admin-panel').classList.add('hidden');
+    }
+
+    document.getElementById('login-page').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+    
+    loadHomeContent();
+    renderAllMembers();
+    renderUserNotification();
+    renderGroupChat();
+    loadAdminPanelData();
+}
+
+function handleLogout() {
+    if (currentUser) {
+        updateMemberStatus(currentUser, 'offline');
+    }
+    currentUser = null;
+    userRole = 'member';
+    localStorage.removeItem('opa_current_user');
+    localStorage.removeItem('opa_current_role');
+
+    document.getElementById('main-app').classList.add('hidden');
+    document.getElementById('login-page').classList.remove('hidden');
+    document.getElementById('form-login').reset();
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+function switchTab(tabId, element) {
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+    document.querySelectorAll('.sidebar-menu li').forEach(li => {
+        li.classList.remove('active');
+    });
+
+    document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+    
+    if (element) {
+        element.classList.add('active');
+    } else {
+        const menus = document.querySelectorAll('.sidebar-menu li');
+        if (tabId === 'home') menus[0]?.classList.add('active');
+        if (tabId === 'anggota') menus[1]?.classList.add('active');
+        if (tabId === 'registrasi') menus[2]?.classList.add('active');
+        if (tabId === 'pesan') {
+            menus[3]?.classList.add('active');
+            document.getElementById('notif-dot-badge').classList.add('hidden');
+        }
+        if (tabId === 'adminpanel') menus[4]?.classList.add('active');
+    }
+
+    if (window.innerWidth <= 768) {
+        toggleSidebar();
+    }
+}
+
+function switchSubAnggota(subType, element) {
+    document.querySelectorAll('.sub-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.sub-btn').forEach(btn => btn.classList.remove('active'));
+
+    document.getElementById(`sub-${subType}`).classList.remove('hidden');
+    if (element) {
+        element.classList.add('active');
+    }
+}
+
+function nextRegStep(stepNumber) {
+    document.querySelectorAll('.reg-step').forEach(step => step.classList.add('hidden'));
+    document.getElementById(`reg-step-${stepNumber}`).classList.remove('hidden');
+}
+
+function loadHomeContent() {
+    document.getElementById('home-about-text').innerText = localStorage.getItem('opa_home_about');
+}
+
+function submitRegistration(e) {
+    e.preventDefault();
+    
+    const nickname = document.getElementById('reg-nickname').value;
+    const realname = document.getElementById('reg-realname').value;
+    const level = document.getElementById('reg-level').value;
+    const idGame = document.getElementById('reg-id').value;
+    const cn = document.getElementById('reg-cn').value;
+    const gender = document.getElementById('reg-gender').value;
+    const wa = document.getElementById('reg-wa').value;
+
+    let waitingList = JSON.parse(localStorage.getItem('opa_waiting')) || [];
+    waitingList.push({ username: currentUser, realname, nickname, id: idGame, level, cn, gender, wa, role: 'Anggota', status: 'offline', type: 'member' });
+    localStorage.setItem('opa_waiting', JSON.stringify(waitingList));
+
+    let statuses = JSON.parse(localStorage.getItem('opa_user_statuses')) || {};
+    statuses[currentUser] = 'pending';
+    localStorage.setItem('opa_user_statuses', JSON.stringify(statuses));
+
+    renderAllMembers();
+    renderUserNotification();
+    nextRegStep(4);
+}
+
+function resetAndGoHome() {
+    document.getElementById('form-registration').reset();
+    nextRegStep(1);
+    switchTab('home');
+}
+
+// Render Anggota sesuai Format Permintaan
+function renderAllMembers() {
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    let waiting = JSON.parse(localStorage.getItem('opa_waiting')) || [];
+
+    let adminContainer = document.getElementById('admin-cards-container');
+    let anggotaContainer = document.getElementById('anggota-cards-container');
+    let waitingContainer = document.getElementById('waiting-cards-container');
+
+    adminContainer.innerHTML = '';
+    anggotaContainer.innerHTML = '';
+    waitingContainer.innerHTML = '';
+
+    // Render Admin & Leader (Leader, Admin, Co Leader, Officer)
+    let adminRoles = ['Leader', 'Admin', 'Co Leader', 'Officer'];
+    let filteredAdmins = members.filter(m => adminRoles.includes(m.role) || m.type === 'admin');
+    
+    if (filteredAdmins.length === 0) {
+        adminContainer.innerHTML = `<p style="color:#94a3b8;">Belum ada data admin.</p>`;
+    } else {
+        filteredAdmins.forEach(m => {
+            adminContainer.innerHTML += createMemberCard(m, false);
+        });
+    }
+
+    // Render Anggota Biasa
+    let filteredAnggota = members.filter(m => !adminRoles.includes(m.role) && m.type !== 'admin');
+    if (filteredAnggota.length === 0) {
+        anggotaContainer.innerHTML = `<p style="color:#94a3b8;">Belum ada anggota tetap.</p>`;
+    } else {
+        filteredAnggota.forEach(m => {
+            anggotaContainer.innerHTML += createMemberCard(m, false);
+        });
+    }
+
+    // Render Menunggu (Waiting)
+    if (waiting.length === 0) {
+        waitingContainer.innerHTML = `<p style="color:#94a3b8;">Tidak ada pendaftar menunggu.</p>`;
+    } else {
+        waiting.forEach((w, index) => {
+            waitingContainer.innerHTML += createWaitingCard(w, index);
+        });
+    }
+}
+
+function createMemberCard(m, isWaiting) {
+    let roleClass = 'role-member';
+    if (m.role === 'Leader') roleClass = 'role-leader';
+    else if (m.role === 'Admin') roleClass = 'role-admin';
+    else if (m.role === 'Co Leader') roleClass = 'role-co-leader';
+    else if (m.role === 'Officer') roleClass = 'role-officer';
+
+    let statusClass = m.status === 'online' ? 'status-online' : 'status-offline';
+    let statusText = m.status === 'online' ? '🟢 Online' : '⚪ Offline';
+
+    return `
+        <div class="member-card-item glassmorphism">
+            <div class="member-card-row">
+                <span>Name :</span>
+                <span>${m.realname}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Nickname :</span>
+                <span style="color:#38bdf8;">${m.nickname}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Id Game :</span>
+                <span>${m.id}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Level Akun :</span>
+                <span>${m.level}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Jabatan :</span>
+                <span><span class="role-badge ${roleClass}">${m.role}</span></span>
+            </div>
+            <div class="member-card-row">
+                <span>Status :</span>
+                <span class="${statusClass}">${statusText}</span>
+            </div>
+            <div class="member-card-row" style="border:none; padding-top:4px;">
+                <span>Approve :</span>
+                <span style="color:#10b981; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Approved</span>
+            </div>
+        </div>
+    `;
+}
+
+function createWaitingCard(w, index) {
+    let actionBtn = userRole === 'admin' 
+        ? `<button class="btn-action-accept" onclick="acceptMember(${index})"><i class="fa-solid fa-check"></i> Terima</button>`
+        : `<span style="color:#f59e0b; font-weight:600;">Menunggu</span>`;
+
+    return `
+        <div class="member-card-item glassmorphism">
+            <div class="member-card-row">
+                <span>Name :</span>
+                <span>${w.realname}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Nickname :</span>
+                <span style="color:#38bdf8;">${w.nickname}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Id Game :</span>
+                <span>${w.id}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Level Akun :</span>
+                <span>${w.level}</span>
+            </div>
+            <div class="member-card-row">
+                <span>Jabatan :</span>
+                <span><span class="role-badge role-member">Calon Anggota</span></span>
+            </div>
+            <div class="member-card-row">
+                <span>Status :</span>
+                <span class="status-offline">⚪ Offline</span>
+            </div>
+            <div class="member-card-row" style="border:none; padding-top:4px;">
+                <span>Approve :</span>
+                <span>${actionBtn}</span>
+            </div>
+        </div>
+    `;
+}
+
+// Admin Terima Pendaftar
+function acceptMember(index) {
+    let waiting = JSON.parse(localStorage.getItem('opa_waiting')) || [];
+    let member = waiting.splice(index, 1)[0];
+    localStorage.setItem('opa_waiting', JSON.stringify(waiting));
+
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    members.push({ realname: member.realname, nickname: member.nickname, id: member.id, level: member.level, role: 'Anggota', status: 'offline', type: 'member' });
+    localStorage.setItem('opa_members', JSON.stringify(members));
+
+    let statuses = JSON.parse(localStorage.getItem('opa_user_statuses')) || {};
+    if (member.username) {
+        statuses[member.username] = 'approved';
+    }
+    localStorage.setItem('opa_user_statuses', JSON.stringify(statuses));
+
+    renderAllMembers();
+    renderUserNotification();
+    loadAdminPanelData();
+    alert(`Berhasil menerima ${member.nickname} sebagai anggota tetap!`);
+}
+
+// Notifikasi Pribadi Anggota
+function renderUserNotification() {
+    let statuses = JSON.parse(localStorage.getItem('opa_user_statuses')) || {};
+    let myStatus = statuses[currentUser] || 'none';
+    let box = document.getElementById('user-notification-box');
+    let badge = document.getElementById('notif-dot-badge');
+
+    if (myStatus === 'approved' || userRole === 'admin') {
+        badge.classList.add('hidden');
+        box.innerHTML = `
+            <div class="notif-box-item approved">
+                <h3 style="color:#10b981; margin-bottom:6px;"><i class="fa-solid fa-circle-check"></i> Selamat, Pendaftaran Diterima!</h3>
+                <p>Pendaftaran Anda telah disetujui oleh Admin guild OPA OFFICIAL. Anda sekarang resmi menjadi anggota tetap guild.</p>
+            </div>
+        `;
+    } else if (myStatus === 'pending') {
+        badge.classList.remove('hidden');
+        box.innerHTML = `
+            <div class="notif-box-item pending">
+                <h3 style="color:#f59e0b; margin-bottom:6px;"><i class="fa-solid fa-clock"></i> Status: Menunggu Konfirmasi Admin</h3>
+                <p>Data pendaftaran Anda sudah masuk dan sedang ditinjau oleh Admin. Silakan menunggu persetujuan.</p>
+            </div>
+        `;
+    } else {
+        badge.classList.add('hidden');
+        box.innerHTML = `
+            <div class="notif-box-item">
+                <h3 style="color:#38bdf8; margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> Belum Mendaftar</h3>
+                <p>Anda belum mengisi formulir pendaftaran anggota. Buka menu <strong>Registrasi Anggota</strong> untuk bergabung.</p>
+            </div>
+        `;
+    }
+}
+
+// Chat Grup (Semua Anggota Bisa Lihat & Kirim)
+function renderGroupChat() {
+    let chatBox = document.getElementById('chat-messages-box');
+    let messages = JSON.parse(localStorage.getItem('opa_chat_group')) || [];
+    chatBox.innerHTML = '';
+
+    messages.forEach(msg => {
+        chatBox.innerHTML += `
+            <div class="chat-msg-bubble">
+                <strong style="color:#38bdf8;">${msg.sender}:</strong> ${msg.text}
+            </div>
+        `;
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function sendGroupMessage() {
+    let input = document.getElementById('chat-msg-input');
+    let text = input.value.trim();
+    if (!text) return;
+
+    let messages = JSON.parse(localStorage.getItem('opa_chat_group')) || [];
+    messages.push({ sender: currentUser || 'Member', text: text });
+    localStorage.setItem('opa_chat_group', JSON.stringify(messages));
+
+    input.value = '';
+    renderGroupChat();
+}
+
+function handleChatKey(e) {
+    if (e.key === 'Enter') {
+        sendGroupMessage();
+    }
+}
+
+// Admin Panel Full Control (Atur Jabatan, Edit Data, Hapus Anggota)
+function loadAdminPanelData() {
+    document.getElementById('edit-about').value = localStorage.getItem('opa_home_about');
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    let tbody = document.getElementById('admin-manage-tbody');
+    tbody.innerHTML = '';
+
+    members.forEach((m, i) => {
+        tbody.innerHTML += `
+            <tr>
+                <td><input type="text" value="${m.nickname}" id="edit-nick-${i}" style="background:rgba(2,6,23,0.5); border:1px solid rgba(56,189,248,0.2); color:#fff; padding:4px 8px; border-radius:6px; width:110px;"></td>
+                <td><input type="text" value="${m.realname}" id="edit-real-${i}" style="background:rgba(2,6,23,0.5); border:1px solid rgba(56,189,248,0.2); color:#fff; padding:4px 8px; border-radius:6px; width:110px;"></td>
+                <td><input type="text" value="${m.id}" id="edit-id-${i}" style="background:rgba(2,6,23,0.5); border:1px solid rgba(56,189,248,0.2); color:#fff; padding:4px 8px; border-radius:6px; width:90px;"></td>
+                <td><input type="number" value="${m.level}" id="edit-lvl-${i}" style="background:rgba(2,6,23,0.5); border:1px solid rgba(56,189,248,0.2); color:#fff; padding:4px 8px; border-radius:6px; width:60px;"></td>
+                <td>
+                    <select id="edit-role-${i}" style="background:rgba(2,6,23,0.8); border:1px solid rgba(56,189,248,0.2); color:#fff; padding:4px 8px; border-radius:6px;">
+                        <option value="Leader" ${m.role === 'Leader' ? 'selected' : ''}>Leader</option>
+                        <option value="Admin" ${m.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                        <option value="Co Leader" ${m.role === 'Co Leader' ? 'selected' : ''}>Co Leader</option>
+                        <option value="Officer" ${m.role === 'Officer' ? 'selected' : ''}>Officer</option>
+                        <option value="Anggota" ${m.role === 'Anggota' ? 'selected' : ''}>Anggota</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn-primary" style="padding:4px 10px; font-size:11px; margin-top:0;" onclick="saveMemberEdit(${i})">Simpan</button>
+                    <button class="btn-action-delete" style="padding:4px 10px; font-size:11px;" onclick="deleteGuildMember(${i})">Hapus</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function saveMemberEdit(index) {
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    members[index].nickname = document.getElementById(`edit-nick-${index}`).value;
+    members[index].realname = document.getElementById(`edit-real-${index}`).value;
+    members[index].id = document.getElementById(`edit-id-${index}`).value;
+    members[index].level = document.getElementById(`edit-lvl-${index}`).value;
+    members[index].role = document.getElementById(`edit-role-${index}`).value;
+
+    if (['Leader', 'Admin'].includes(members[index].role)) {
+        members[index].type = 'admin';
+    } else {
+        members[index].type = 'member';
+    }
+
+    localStorage.setItem('opa_members', JSON.stringify(members));
+    renderAllMembers();
+    alert("Data anggota berhasil diperbarui!");
+}
+
+function deleteGuildMember(index) {
+    let members = JSON.parse(localStorage.getItem('opa_members')) || [];
+    members.splice(index, 1);
+    localStorage.setItem('opa_members', JSON.stringify(members));
+    renderAllMembers();
+    loadAdminPanelData();
+    alert("Anggota berhasil dihapus dari guild.");
+}
+
+function handleUpdateHome(e) {
+    e.preventDefault();
+    const about = document.getElementById('edit-about').value;
+    localStorage.setItem('opa_home_about', about);
+    loadHomeContent();
+    alert("Informasi Home berhasil diperbarui!");
+}
+
+function handleSendBroadcast(e) {
+    e.preventDefault();
+    const text = document.getElementById('broadcast-text').value.trim();
+    if (!text) return;
+
+    let messages = JSON.parse(localStorage.getItem('opa_chat_group')) || [];
+    messages.push({ sender: 'PENGUMUMAN ADMIN', text: text });
+    localStorage.setItem('opa_chat_group', JSON.stringify(messages));
+
+    document.getElementById('broadcast-text').value = '';
+    renderGroupChat();
+    alert("Broadcast berhasil dikirim ke grup chat semua anggota!");
+}
