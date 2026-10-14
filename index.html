@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPA | OFFICIAL - Gaming Guild</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Tombol Toggle Mobile Sidebar -->
+    <button class="mobile-toggle-btn" id="mobileToggle" onclick="toggleSidebar()">
+        <i class="fa-solid fa-gamepad"></i>
+    </button>
+
+    <!-- Overlay untuk mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- HALAMAN LOGIN -->
+    <div id="login-page" class="auth-container">
+        <div class="auth-card glassmorphism">
+            <div class="auth-logo-container">
+                <img src="logo.png" alt="OPA Logo" class="guild-logo-img" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='flex';">
+                <div id="fallback-logo" class="brand-logo" style="display:none; margin: 0 auto 15px auto;">O</div>
+            </div>
+            <h2>OPA | OFFICIAL</h2>
+            <p>Pusat Komando Anggota Guild</p>
+            
+            <div class="tab-auth">
+                <button id="tab-login-btn" class="active" onclick="switchAuthTab('login')">Login</button>
+                <button id="tab-register-btn" onclick="switchAuthTab('register')">Daftar Akun</button>
+            </div>
+
+            <!-- Form Login -->
+            <form id="form-login" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label><i class="fa-solid fa-user"></i> Username / Nickname</label>
+                    <input type="text" id="login-username" required placeholder="Masukkan username...">
+                </div>
+                <div class="input-group">
+                    <label><i class="fa-solid fa-lock"></i> Password</label>
+                    <input type="password" id="login-password" required placeholder="Masukkan password...">
+                </div>
+                <button type="submit" class="btn-primary"><i class="fa-solid fa-right-to-bracket"></i> MASUK</button>
+            </form>
+
+            <!-- Form Buat Akun Baru -->
+            <form id="form-signup" class="hidden" onsubmit="handleSignup(event)">
+                <div class="input-group">
+                    <label><i class="fa-solid fa-user-plus"></i> Buat Username Baru</label>
+                    <input type="text" id="signup-username" required placeholder="Pilih username unik...">
+                </div>
+                <div class="input-group">
+                    <label><i class="fa-solid fa-key"></i> Password (Acak Keamanan Tinggi)</label>
+                    <div class="pass-gen-box">
+                        <input type="text" id="signup-password" readonly required placeholder="Klik acak password...">
+                        <button type="button" class="btn-secondary" onclick="generateRandomPassword()">Acak</button>
+                    </div>
+                    <small style="color: #38bdf8; font-size: 11px;">Simpan password acak ini agar tidak lupa!</small>
+                </div>
+                <button type="submit" class="btn-primary"><i class="fa-solid fa-shield-halved"></i> BUAT AKUN</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- HALAMAN UTAMA -->
+    <div id="main-app" class="app-container hidden">
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar glassmorphism">
+            <div class="sidebar-brand">
+                <img src="logo.png" alt="Logo" class="sidebar-logo-img" onerror="this.style.display='none'; document.getElementById('sidebar-fallback').style.display='flex';">
+                <div id="sidebar-fallback" class="brand-logo" style="display:none;">O</div>
+                <span>OPA | OFFICIAL</span>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item active" onclick="switchTab('home', this)">
+                    <i class="fa-solid fa-house"></i><span>Home</span>
+                </li>
+                <li class="menu-item" onclick="switchTab('anggota', this)">
+                    <i class="fa-solid fa-users"></i><span>Anggota</span>
+                </li>
+                <li class="menu-item" onclick="switchTab('registrasi', this)">
+                    <i class="fa-solid fa-id-card"></i><span>Registrasi Anggota</span>
+                </li>
+                <li class="menu-item" onclick="switchTab('pesan', this)">
+                    <i class="fa-solid fa-envelope"></i><span>Pesan <span id="msg-badge" class="notif-dot hidden"></span></span>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar" id="user-avatar-icon"><i class="fa-solid fa-user-shield"></i></div>
+                    <div class="user-info">
+                        <h4 id="display-username">Player</h4>
+                        <small id="display-role">Member Guild</small>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()" title="Keluar"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </aside>
+
+        <!-- KONTEN UTAMA -->
+        <main class="main-content">
+            
+            <!-- 1. HOME TAB -->
+            <section id="tab-home" class="content-section">
+                <header class="content-header">
+                    <h2>Tentang Guild & Informasi</h2>
+                    <p>Pusat komando resmi komunitas game OPA.</p>
+                </header>
+                <div class="grid-cards">
+                    <div class="card glassmorphism">
+                        <h3><i class="fa-solid fa-shield-halved"></i> Tentang Guild Kami</h3>
+                        <p>OPA Guild adalah aliansi game kompetitif yang mengutamakan solidaritas, kekompakan, dan dominasi di berbagai arena pertempuran game online.</p>
+                    </div>
+                    <div class="card glassmorphism">
+                        <h3><i class="fa-solid fa-bullhorn"></i> Informasi & Pengumuman</h3>
+                        <ul>
+                            <li>🔥 <strong>Event Guild War</strong>: Jadwal tanding minggu ini pukul 20.00 WIB.</li>
+                            <li>⚠️ <strong>Wajib CN</strong>: Anggota baru wajib menggunakan format tag <strong>OPA・</strong>.</li>
+                            <li>💬 Gunakan fitur pesan untuk melihat status penerimaan dan koordinasi mabar.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. ANGGOTA TAB -->
+            <section id="tab-anggota" class="content-section hidden">
+                <header class="content-header">
+                    <h2>Daftar Anggota Guild</h2>
+                    <p>Hierarki dan status prajurit pasukan OPA.</p>
+                </header>
+
+                <div class="sub-tabs">
+                    <button class="sub-btn active" onclick="switchSubAnggota('admin', this)">ADMIN</button>
+                    <button class="sub-btn" onclick="switchSubAnggota('anggota', this)">ANGGOTA</button>
+                    <button class="sub-btn" onclick="switchSubAnggota('menunggu', this)">MENUNGGU</button>
+                </div>
+
+                <!-- Admin Tab Content -->
+                <div id="sub-admin" class="sub-content">
+                    <div class="admin-action-bar" id="admin-add-box" style="display: none; margin-bottom: 15px;">
+                        <button class="btn-primary" onclick="openAddAdminModal()" style="width: auto; padding: 10px 20px; font-size: 12px;"><i class="fa-solid fa-user-plus"></i> Tambah Admin Baru</button>
+                    </div>
+                    <div class="table-container glassmorphism">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Real Name</th>
+                                    <th>Nickname</th>
+                                    <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body">
+                                <tr>
+                                    <td>Feyn Master</td>
+                                    <td>OPA・Feyn</td>
+                                    <td>10001515</td>
+                                    <td>99</td>
+                                    <td><span class="badge admin">admin</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Anggota Tab Content -->
+                <div id="sub-anggota" class="sub-content hidden">
+                    <div class="table-container glassmorphism">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Real Name</th>
+                                    <th>Nickname</th>
+                                    <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="anggota-table-body">
+                                <tr>
+                                    <td>Dimas Pratama</td>
+                                    <td>OPA・Vortex</td>
+                                    <td>11223344</td>
+                                    <td>85</td>
+                                    <td><span class="badge anggota">anggota</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Menunggu Tab Content -->
+                <div id="sub-menunggu" class="sub-content hidden">
+                    <div class="table-container glassmorphism">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Real Name</th>
+                                    <th>Nickname</th>
+                                    <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Aksi Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="waiting-list-tbody">
+                                <!-- Data pendaftar baru -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. REGISTRASI ANGGOTA TAB -->
+            <section id="tab-registrasi" class="content-section hidden">
+                <div class="register-wizard glassmorphism">
+                    <div id="reg-step-1" class="reg-step">
+                        <div class="wizard-hero">
+                            <img src="logo.png" alt="Logo" class="wizard-logo-img" onerror="this.style.display='none'; document.getElementById('wizard-fallback').style.display='flex';">
+                            <div id="wizard-fallback" class="big-logo" style="display:none;">O</div>
+                            <h2>OPA | OFFICIAL REGISTRATION</h2>
+                            <p>Daftarkan dirimu dan jadilah bagian dari legenda kami.</p>
+                            <button class="btn-primary" onclick="nextRegStep(2)"><i class="fa-solid fa-arrow-right"></i> Mulai Pendaftaran</button>
+                        </div>
+                    </div>
+
+                    <div id="reg-step-2" class="reg-step hidden">
+                        <h3>Syarat Masuk Guild OPA</h3>
+                        <ul class="terms-list">
+                            <li><i class="fa-solid fa-check-circle"></i> Wajib aktif bermain dan kumpul mabar mingguan.</li>
+                            <li><i class="fa-solid fa-check-circle"></i> Siap mengganti Nickname dengan format <strong>OPA・</strong>.</li>
+                            <li><i class="fa-solid fa-check-circle"></i> Solid, menjunjung tinggi sportifitas, no toxic.</li>
+                            <li><i class="fa-solid fa-check-circle"></i> Level karakter memenuhi standar minimum guild.</li>
+                        </ul>
+                        <div class="wizard-actions">
+                            <button class="btn-secondary" onclick="nextRegStep(1)">Kembali</button>
+                            <button class="btn-primary" onclick="nextRegStep(3)">Setuju & Lanjut</button>
+                        </div>
+                    </div>
+
+                    <div id="reg-step-3" class="reg-step hidden">
+                        <h3>Formulir Data Calon Anggota</h3>
+                        <form id="form-registration" onsubmit="submitRegistration(event)">
+                            <div class="form-grid">
+                                <div class="input-group">
+                                    <label>Nickname Game</label>
+                                    <input type="text" id="reg-nickname" required placeholder="Contoh: OPA・Alex">
+                                </div>
+                                <div class="input-group">
+                                    <label>Real Name</label>
+                                    <input type="text" id="reg-realname" required placeholder="Nama Asli...">
+                                </div>
+                                <div class="input-group">
+                                    <label>Level</label>
+                                    <input type="number" id="reg-level" required placeholder="Level Karakter...">
+                                </div>
+                                <div class="input-group">
+                                    <label>ID Game</label>
+                                    <input type="text" id="reg-id" required placeholder="ID Akun Game...">
+                                </div>
+                                <div class="input-group">
+                                    <label>Waktu CN (Change Nickname)</label>
+                                    <input type="text" id="reg-cn" required placeholder="Contoh: Besok / Sudah CN">
+                                </div>
+                                <div class="input-group">
+                                    <label>Jenis Kelamin</label>
+                                    <select id="reg-gender" required>
+                                        <option value="">Pilih...</option>
+                                        <option value="Laki-laki">Laki-laki</option>
+                                        <option value="Perempuan">Perempuan</option>
+                                    </select>
+                                </div>
+                                <div class="input-group full-width">
+                                    <label>No WhatsApp</label>
+                                    <input type="tel" id="reg-wa" required placeholder="08xxxxxxxxxx">
+                                </div>
+                            </div>
+                            <div class="wizard-actions">
+                                <button type="button" class="btn-secondary" onclick="nextRegStep(2)">Kembali</button>
+                                <button type="submit" class="btn-primary">Kirim Pendaftaran</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="reg-step-4" class="reg-step hidden text-center">
+                        <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <h2>Pendaftaran Berhasil Dikirim!</h2>
+                        <p>Data kamu masuk dalam daftar <strong>MENUNGGU</strong>. Cek menu <strong>Pesan</strong> secara berkala untuk notifikasi penerimaan dari admin.</p>
+                        <button class="btn-primary" onclick="resetAndGoHome()">Back to Home</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. PESAN TAB -->
+            <section id="tab-pesan" class="content-section hidden">
+                <header class="content-header">
+                    <h2>Pesan & Notifikasi Guild</h2>
+                    <p>Ruang obrolan internal dan pemberitahuan status penerimaan anggota.</p>
+                </header>
+                <div class="chat-box glassmorphism">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="chat-msg">
+                            <strong>[ADMIN] Feyn:</strong> Selamat datang di OPA OFFICIAL! Cek pesan ini untuk pemberitahuan status pendaftaran guild.
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Tulis pesan..." onkeypress="handleChatPress(event)">
+                        <button class="btn-primary" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal Tambah Admin (Khusus Admin Utama Feyn) -->
+    <div id="adminModal" class="modal-overlay hidden">
+        <div class="modal-card glassmorphism">
+            <h3>Tambah Admin Guild Baru</h3>
+            <form onsubmit="handleAddAdmin(event)">
+                <div class="input-group">
+                    <label>Real Name</label>
+                    <input type="text" id="new-admin-realname" required placeholder="Nama asli...">
+                </div>
+                <div class="input-group">
+                    <label>Nickname</label>
+                    <input type="text" id="new-admin-nickname" required placeholder="Contoh: OPA・Mod">
+                </div>
+                <div class="input-group">
+                    <label>ID Game</label>
+                    <input type="text" id="new-admin-id" required placeholder="ID...">
+                </div>
+                <div class="input-group">
+                    <label>Level</label>
+                    <input type="number" id="new-admin-level" required placeholder="Level...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddAdminModal()">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
