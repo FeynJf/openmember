@@ -18,7 +18,7 @@ let emojiTarget = 'group';
 const OPA_FIREBASE_CONFIG = {
     apiKey: "AIzaSyDLq-B74ujWgL_B_EXnfkM89Rg2KBJ_aSw",
     authDomain: "opaofficial-ecfb1.firebaseapp.com",
-    databaseURL: "https://opaofficial-ecfb1-default-rtdb.firebaseio.com",
+    databaseURL: "https://opaofficial-ecfb1-default-rtdb.asia-southeast1.firebasedatabase.app/",
     projectId: "opaofficial-ecfb1",
     storageBucket: "opaofficial-ecfb1.firebasestorage.app",
     messagingSenderId: "419618948609",
