@@ -1,0 +1,33 @@
+PANDUAN SINKRON CHAT & STORY ANTAR HP (Firebase — GRATIS)
+==========================================================
+
+Tanpa langkah ini, chat/story HANYA tersimpan di HP masing-masing.
+
+1. Buka https://console.firebase.google.com/ → login Google
+2. Create a project → nama: OPA-OFFICIAL (Google Analytics boleh off)
+3. Tambah app Web (ikon </> ) → nama app bebas → Register
+4. Salin object firebaseConfig (apiKey, authDomain, databaseURL, projectId, ...)
+5. Di menu Build → Realtime Database → Create Database → start in TEST MODE (30 hari)
+   - Pilih lokasi terdekat (asia)
+6. Pastikan databaseURL muncul di config (bentuk: https://XXXX-default-rtdb.firebaseio.com)
+7. Buka file script.js → cari OPA_FIREBASE_CONFIG → paste nilai dari Firebase
+8. Upload ulang index.html + script.js + style.css + members.js ke GitHub Pages
+9. Di Realtime Database → Rules (untuk testing guild kecil):
+
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+
+   (Nanti bisa dikunci auth kalau sudah siap)
+
+10. Buka web di 2 HP → daftar/login → kirim chat grup → harus muncul di keduanya.
+11. Izinkan Notifikasi saat browser minta izin.
+
+CATATAN MEDIA:
+- Teks chat & story TEXT sinkron penuh.
+- Foto/video media disimpan IndexedDB per-HP; untuk media full-sync nanti bisa ditambah Firebase Storage.
+
+Akun admin bawaan tetap bisa login tanpa Firebase.
